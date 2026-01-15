@@ -1,0 +1,19 @@
+# Ignore virtualenvs, creds, outputs, editor files
+myenv/
+venv/
+.env
+credentials/
+*.key.json
+__pycache__/
+*.pyc
+outputs/
+logs/
+*.sqlite3
+.idea/
+.vscode/
+
+# Ignore large data files
+data/*.csv
+data/*.parquet
+data/*.json
+*.log
