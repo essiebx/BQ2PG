@@ -503,7 +503,7 @@ make run-container
 - ✅ BigQuery SQL syntax and optimization
 - ✅ PostgreSQL window functions and CTEs
 - ✅ Index creation and query planning
-- ✅ Data migration queries
+-  Data migration queries
 
 ### 8. **Monitoring & Performance**
 - ✅ Performance profiling (timing decorators)
@@ -667,7 +667,7 @@ Q4 2026
 
 ---
 
-## 📞 Support & Troubleshooting
+##  Support & Troubleshooting
 
 ### Common Issues
 
@@ -702,46 +702,35 @@ python main.py --limit 50000  # Instead of millions
 
 ---
 
-## 📄 License
 
-This project is licensed under the MIT License - see LICENSE file for details.
 
 ---
 
 ## 👥 Contributing
 
-Contributions are welcome! Please:
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit changes (`git commit -m 'Add amazing feature'`)
-4. Push to branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+Contributions are welcome! 
 
 ---
 
 ## 📞 Contact & Support
 
 For issues, questions, or suggestions:
-- 📧 Email: [your-email@example.com]
-- 🐛 GitHub Issues: [repository-issues-link]
-- 💬 Discussions: [repository-discussions-link]
+- https://linkedin.com/in/esthernaisimoi
 
 ---
 
 **Last Updated**: January 15, 2026  
 **Version**: 1.0.0  
-**Maintainer**: Data Engineering Team
+**Maintainer**: essie
 
 ---
 
 ## 🙏 Acknowledgments
 
-- Google Cloud Platform and BigQuery team
-- PostgreSQL community
+- Google Cloud Platform and BigQuery 
+- PostgreSQL
 - Open-source libraries: pandas, SQLAlchemy, google-cloud-bigquery
-- Contributors and testers
 
 ---
 
-> **Made with ❤️ for data engineers and researchers**
+> **Made with ❤️ for data engineers , any curious data nerd and researchers**
