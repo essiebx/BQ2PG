@@ -19,17 +19,17 @@ def main():
         try:
             result = test_func()
             results.append((name, True, result))
-            print(f"  ✅ {result}")
+            print(f"  [OK] {result}")
         except Exception as e:
             results.append((name, False, str(e)))
-            print(f"  ❌ {e}")
+            print(f"  [ERROR] {e}")
     
     print("\n" + "=" * 60)
     print("📈 Test Summary:")
     print("=" * 60)
     
     for name, success, message in results:
-        status = "✅" if success else "❌"
+        status = "[OK]" if success else "[ERROR]"
         print(f"{status} {name}: {message}")
     
     all_passed = all(success for _, success, _ in results)
@@ -40,7 +40,7 @@ def main():
         print("  make psql      # Connect to database")
         print("  make pgadmin   # Open admin interface")
     else:
-        print("\n⚠️  Some tests failed. Check configuration.")
+        print("\n[WARNING]  Some tests failed. Check configuration.")
     
     return 0 if all_passed else 1
 

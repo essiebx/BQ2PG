@@ -1,0 +1,78 @@
+groups:
+  - name: bq2pg_alerts
+    interval: 30s
+    rules:
+      # API Server Alerts
+      - alert: APIServerDown
+        expr: up{job="api"} == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "BQ2PG API is down"
+          description: "API server has been down for more than 2 minutes"
+
+      - alert: HighAPILatency
+        expr: histogram_quantile(0.99, rate(http_request_duration_seconds_bucket[5m])) > 1
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High API latency detected"
+          description: "99th percentile latency is above 1 second"
+
+      # Database Alerts
+      - alert: PostgreSQLDown
+        expr: up{job="postgres"} == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "PostgreSQL is down"
+          description: "PostgreSQL database is not responding"
+
+      - alert: HighDiskUsage
+        expr: (node_filesystem_avail_bytes / node_filesystem_size_bytes) < 0.1
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High disk usage"
+          description: "Disk usage is above 90%"
+
+      - alert: HighMemoryUsage
+        expr: (1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) > 0.85
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High memory usage"
+          description: "Memory usage is above 85%"
+
+      - alert: HighCPUUsage
+        expr: 100 - (avg by (instance) (rate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 80
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High CPU usage"
+          description: "CPU usage is above 80%"
+
+      # Pipeline Alerts
+      - alert: PipelineStalled
+        expr: increase(pipeline_records_processed_total[5m]) == 0
+        for: 15m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Pipeline is stalled"
+          description: "No records have been processed in the last 15 minutes"
+
+      - alert: HighErrorRate
+        expr: (rate(pipeline_errors_total[5m]) / rate(pipeline_records_total[5m])) > 0.05
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High error rate in pipeline"
+          description: "Error rate is above 5%"

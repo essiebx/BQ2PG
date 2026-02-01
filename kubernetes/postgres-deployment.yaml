@@ -1,0 +1,202 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: postgres-data
+  namespace: bq2pg
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: standard
+  resources:
+    requests:
+      storage: 500Gi
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: postgres
+  namespace: bq2pg
+spec:
+  serviceName: postgres-service
+  replicas: 1
+  selector:
+    matchLabels:
+      app: postgres
+  template:
+    metadata:
+      labels:
+        app: postgres
+    spec:
+      securityContext:
+        fsGroup: 999
+      containers:
+      - name: postgres
+        image: postgres:15-alpine
+        ports:
+        - containerPort: 5432
+          name: postgres
+        env:
+        - name: POSTGRES_DB
+          value: bq2pg
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: postgres-secret
+              key: password
+        - name: POSTGRES_INITDB_ARGS
+          value: "-c max_connections=1000 -c shared_buffers=4GB -c effective_cache_size=12GB"
+        resources:
+          requests:
+            cpu: 2
+            memory: 4Gi
+          limits:
+            cpu: 4
+            memory: 8Gi
+        livenessProbe:
+          exec:
+            command:
+            - /bin/sh
+            - -c
+            - pg_isready -U postgres
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          exec:
+            command:
+            - /bin/sh
+            - -c
+            - pg_isready -U postgres
+          initialDelaySeconds: 5
+          periodSeconds: 5
+        volumeMounts:
+        - name: data
+          mountPath: /var/lib/postgresql/data
+        - name: init-scripts
+          mountPath: /docker-entrypoint-initdb.d
+      volumes:
+      - name: init-scripts
+        configMap:
+          name: postgres-init
+  volumeClaimTemplates:
+  - metadata:
+      name: data
+    spec:
+      accessModes:
+        - ReadWriteOnce
+      storageClassName: standard
+      resources:
+        requests:
+          storage: 500Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres-service
+  namespace: bq2pg
+spec:
+  clusterIP: None
+  ports:
+  - port: 5432
+    targetPort: 5432
+  selector:
+    app: postgres
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: postgres-secret
+  namespace: bq2pg
+type: Opaque
+stringData:
+  password: "{{ POSTGRES_PASSWORD }}"
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: postgres-init
+  namespace: bq2pg
+data:
+  init.sql: |
+    CREATE EXTENSION IF NOT EXISTS uuid-ossp;
+    CREATE EXTENSION IF NOT EXISTS pg_trgm;
+    CREATE EXTENSION IF NOT EXISTS btree_gin;
+    
+    -- Create audit schema
+    CREATE SCHEMA IF NOT EXISTS audit;
+    
+    -- Create audit table
+    CREATE TABLE IF NOT EXISTS audit.audit_log (
+      id BIGSERIAL PRIMARY KEY,
+      event_type VARCHAR(50) NOT NULL,
+      table_name VARCHAR(100),
+      operation VARCHAR(10),
+      user_name VARCHAR(100),
+      event_timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      old_data JSONB,
+      new_data JSONB,
+      changes JSONB
+    );
+    
+    -- Create index on audit table
+    CREATE INDEX idx_audit_log_table ON audit.audit_log(table_name);
+    CREATE INDEX idx_audit_log_timestamp ON audit.audit_log(event_timestamp);
+    
+    -- Create DLQ table
+    CREATE TABLE IF NOT EXISTS public.dead_letter_queue (
+      id BIGSERIAL PRIMARY KEY,
+      message JSONB NOT NULL,
+      error_reason TEXT,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      processed BOOLEAN DEFAULT FALSE,
+      retry_count INT DEFAULT 0
+    );
+    
+    CREATE INDEX idx_dlq_created ON public.dead_letter_queue(created_at);
+    CREATE INDEX idx_dlq_processed ON public.dead_letter_queue(processed);
+    
+    -- Create metrics table
+    CREATE TABLE IF NOT EXISTS public.pipeline_metrics (
+      id BIGSERIAL PRIMARY KEY,
+      metric_name VARCHAR(100) NOT NULL,
+      metric_value DOUBLE PRECISION,
+      tags JSONB,
+      recorded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );
+    
+    CREATE INDEX idx_metrics_name ON public.pipeline_metrics(metric_name);
+    CREATE INDEX idx_metrics_time ON public.pipeline_metrics(recorded_at);
+    
+    -- Create lineage table
+    CREATE TABLE IF NOT EXISTS public.data_lineage (
+      id BIGSERIAL PRIMARY KEY,
+      source_id VARCHAR(100),
+      source_name VARCHAR(255),
+      target_id VARCHAR(100),
+      target_name VARCHAR(255),
+      transformation_type VARCHAR(50),
+      metadata JSONB,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );
+    
+    CREATE INDEX idx_lineage_source ON public.data_lineage(source_id);
+    CREATE INDEX idx_lineage_target ON public.data_lineage(target_id);
+    
+    -- Grant permissions
+    GRANT USAGE ON SCHEMA audit TO bq2pg_user;
+    GRANT SELECT ON ALL TABLES IN SCHEMA audit TO bq2pg_user;
+    GRANT INSERT ON public.dead_letter_queue TO bq2pg_user;
+    GRANT INSERT ON public.pipeline_metrics TO bq2pg_user;
+    GRANT INSERT ON public.data_lineage TO bq2pg_user;
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: postgres-pdb
+  namespace: bq2pg
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: postgres

@@ -66,7 +66,7 @@ def export_ml_features():
                     if count % 50000 == 0:
                         logger.info("Exported %d rows...", count)
     
-    logger.info("✅ ML features export complete: %s (%d rows)", output_file, count)
+    logger.info("[OK] ML features export complete: %s (%d rows)", output_file, count)
     return output_file
 
 if __name__ == "__main__":
