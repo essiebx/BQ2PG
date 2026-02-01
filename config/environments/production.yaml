@@ -1,0 +1,37 @@
+# Production environment configuration
+database:
+  host: ${DB_HOST}
+  port: ${DB_PORT}
+  name: ${DB_NAME}
+  user: ${DB_USER}
+  pool_size: 20
+  max_overflow: 40
+  pool_recycle: 1800
+
+bigquery:
+  project_id: ${GCP_PROJECT}
+  dataset: bq2pg_prod
+  location: US
+
+logging:
+  level: INFO
+  format: json
+
+pipeline:
+  batch_size: 50000
+  parallel_workers: 8
+  checkpoint_interval: 500000
+  enable_checkpoint_recovery: true
+
+resilience:
+  max_retries: 5
+  initial_retry_delay: 2
+  backoff_multiplier: 2.5
+  circuit_breaker_threshold: 10
+  circuit_breaker_timeout: 120
+
+monitoring:
+  enabled: true
+  metrics_port: 8000
+  trace_sample_rate: 0.1
+  health_check_interval: 30

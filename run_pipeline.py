@@ -17,7 +17,7 @@ try:
     exit_code = main()
     sys.exit(exit_code)
 except ImportError as e:
-    print(f"❌ Import error: {e}")
+    print(f"[ERROR] Import error: {e}")
     print("\n💡 Check that:")
     print("  1. src/ directory exists with Python files")
     print("  2. main.py is in the root directory")

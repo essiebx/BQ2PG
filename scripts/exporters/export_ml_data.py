@@ -69,7 +69,7 @@ def export_to_csv():
                     if count % 50000 == 0:
                         logger.info("Exported %d rows...", count)
     
-    logger.info("✅ Export complete: %s (%d rows)", output_file, count)
+    logger.info("[OK] Export complete: %s (%d rows)", output_file, count)
     return output_file
 
 if __name__ == "__main__":

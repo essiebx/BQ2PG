@@ -188,11 +188,11 @@ def scaled_pipeline():
             conn.commit()
             total_time = time.time() - start_time
             logger.info(
-                "✅ Complete | Loaded %d rows in %.1f sec (%.0f rows/sec)",
+                "[OK] Complete | Loaded %d rows in %.1f sec (%.0f rows/sec)",
                 total_loaded, total_time, total_loaded / total_time if total_time > 0 else 0
             )
 
-    logger.info("✅ Retrieved ~%d rows, Loaded %d rows", total_rows, total_loaded)
+    logger.info("[OK] Retrieved ~%d rows, Loaded %d rows", total_rows, total_loaded)
 
 if __name__ == "__main__":
     try:
