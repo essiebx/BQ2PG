@@ -4,7 +4,7 @@
 
 ---
 
-## 📄 Product Requirements Document (PRD)
+
 
 ### 1. Problem Statement
 Many data engineers and analysts need to move data from BigQuery to a local or on-premise PostgreSQL instance for cost-efficient analysis, development, or backup. Existing solutions are either:
@@ -22,7 +22,7 @@ Many data engineers and analysts need to move data from BigQuery to a local or o
 
 ---
 
-## 🛠 Functional Requirements
+##  Functional Requirements
 
 ### FR-01: Premium Web Interface
 - **Glassmorphism Design**: A sleek, modern UI built with Outfit typography and vibrant aesthetics.
@@ -40,7 +40,7 @@ Many data engineers and analysts need to move data from BigQuery to a local or o
 
 ---
 
-## 🗼 Technical Specification
+##  Technical Specification
 
 ### Internal Architecture
 BQ2PG follows a modular architecture designed for extensibility:
@@ -57,7 +57,7 @@ BQ2PG follows a modular architecture designed for extensibility:
 
 ---
 
-## 🚀 Quick Start
+##  Quick Start
 
 ### Prerequisites
 - Python 3.11+
@@ -77,7 +77,7 @@ python api/server.py
 
 ---
 
-## 📈 Roadmap
+##  Roadmap
 
 - [x] Premium UI/UX Overhaul
 - [x] Removal of heavy DevOps dependencies (Lite Refactor)
@@ -88,12 +88,11 @@ python api/server.py
 
 ---
 
-## 🤝 Contributing
+##    Contributing
 Contributions are what make the data community amazing. Please read our [CONTRIBUTING.md](CONTRIBUTING.md) to get started.
 
-## 📝 License
+##    License
 Distributed under the MIT License. See `LICENSE` for more information.
 
 ---
 
-**Made with ❤️ for the Data Community**

@@ -1,0 +1,1 @@
+{"timestamp": "2026-02-07T14:08:17.963531", "source": "extract", "error": "module 'pandas' has no attribute 'read_gbq'", "retry_count": 0, "record": {"query_snippet": "SELECT * FROM `bigquery-public-data.patents.publications`"}}
