@@ -3,7 +3,7 @@
 import logging
 import gc
 import psutil
-from typing import Dict, Any, Optional
+from typing import Dict, Any
 from dataclasses import dataclass
 
 logger = logging.getLogger(__name__)
@@ -81,7 +81,7 @@ class MemoryOptimizer:
             Batches of items.
         """
         for i in range(0, len(items), batch_size):
-            batch = items[i : i + batch_size]
+            batch = items[i:i + batch_size]
             yield batch
             self.cleanup()
 

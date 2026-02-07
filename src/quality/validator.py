@@ -3,7 +3,7 @@
 import logging
 from typing import Dict, Any, List, Optional
 import pandas as pd
-import numpy as np
+
 
 logger = logging.getLogger(__name__)
 
@@ -15,7 +15,9 @@ class DataValidator:
         """Initialize data validator."""
         self.validation_results = []
 
-    def validate_nulls(self, df: pd.DataFrame, nullable_columns: Optional[List[str]] = None) -> Dict[str, Any]:
+    def validate_nulls(
+        self, df: pd.DataFrame, nullable_columns: Optional[List[str]] = None
+    ) -> Dict[str, Any]:
         """Check for null values.
 
         Args:
@@ -57,7 +59,9 @@ class DataValidator:
 
         return result
 
-    def validate_duplicates(self, df: pd.DataFrame, key_columns: List[str]) -> Dict[str, Any]:
+    def validate_duplicates(
+        self, df: pd.DataFrame, key_columns: List[str]
+    ) -> Dict[str, Any]:
         """Check for duplicate rows.
 
         Args:
@@ -87,7 +91,9 @@ class DataValidator:
 
         return result
 
-    def validate_types(self, df: pd.DataFrame, expected_types: Dict[str, str]) -> Dict[str, Any]:
+    def validate_types(
+        self, df: pd.DataFrame, expected_types: Dict[str, str]
+    ) -> Dict[str, Any]:
         """Check data types.
 
         Args:
@@ -114,7 +120,10 @@ class DataValidator:
 
             actual_type = str(df[column].dtype)
 
-            if expected_type == "numeric" and not pd.api.types.is_numeric_dtype(df[column]):
+            if (
+                expected_type == "numeric" and
+                not pd.api.types.is_numeric_dtype(df[column])
+            ):
                 result["passed"] = False
                 result["issues"].append({
                     "column": column,
@@ -122,7 +131,9 @@ class DataValidator:
                     "expected": expected_type,
                     "actual": actual_type,
                 })
-            elif expected_type == "string" and not df[column].dtype == "object":
+            elif expected_type == "string" and not (
+                df[column].dtype == "object"
+            ):
                 result["issues"].append({
                     "column": column,
                     "type": "type_mismatch",
@@ -133,7 +144,9 @@ class DataValidator:
 
         return result
 
-    def validate_ranges(self, df: pd.DataFrame, ranges: Dict[str, tuple]) -> Dict[str, Any]:
+    def validate_ranges(
+        self, df: pd.DataFrame, ranges: Dict[str, tuple]
+    ) -> Dict[str, Any]:
         """Check numeric ranges.
 
         Args:
@@ -167,7 +180,9 @@ class DataValidator:
 
         return result
 
-    def validate_string_patterns(self, df: pd.DataFrame, patterns: Dict[str, str]) -> Dict[str, Any]:
+    def validate_string_patterns(
+        self, df: pd.DataFrame, patterns: Dict[str, str]
+    ) -> Dict[str, Any]:
         """Check string patterns.
 
         Args:
@@ -227,7 +242,9 @@ class DataValidator:
         Returns:
             Dictionary with all validation results.
         """
-        logger.info(f"Starting validation of {len(df)} rows, {len(df.columns)} columns")
+        logger.info(
+            f"Starting validation of {len(df)} rows, {len(df.columns)} columns"
+        )
 
         results = {
             "timestamp": pd.Timestamp.now().isoformat(),
@@ -251,5 +268,8 @@ class DataValidator:
             if not check["passed"]:
                 results["passed"] = False
 
-        logger.info(f"Validation complete: {'PASSED' if results['passed'] else 'FAILED'}")
+        logger.info(
+            f"Validation complete: "
+            f"{'PASSED' if results['passed'] else 'FAILED'}"
+        )
         return results

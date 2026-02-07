@@ -1,8 +1,8 @@
 """Database connection pooling for performance."""
 
 import logging
-from typing import Optional, Dict, Any
-from psycopg2 import pool, OperationalError
+from typing import Dict, Any
+from psycopg2 import pool
 
 logger = logging.getLogger(__name__)
 

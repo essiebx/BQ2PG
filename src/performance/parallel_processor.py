@@ -30,7 +30,9 @@ class ParallelProcessor:
         """
         self.max_workers = max_workers
         self.timeout = timeout
-        logger.info(f"Initialized ParallelProcessor with {max_workers} workers")
+        logger.info(
+            f"Initialized ParallelProcessor with {max_workers} workers"
+        )
 
     def process_batches(
         self,
@@ -48,7 +50,9 @@ class ParallelProcessor:
         Yields:
             ProcessingResult for each batch.
         """
-        with concurrent.futures.ThreadPoolExecutor(max_workers=self.max_workers) as executor:
+        with concurrent.futures.ThreadPoolExecutor(
+            max_workers=self.max_workers
+        ) as executor:
             futures = {}
 
             # Submit all tasks
@@ -62,7 +66,10 @@ class ParallelProcessor:
                 try:
                     start_time = future._start_time
                     result = future.result(timeout=self.timeout)
-                    duration = (future._end_time - start_time) * 1000 if hasattr(future, "_end_time") else 0
+                    duration = (
+                        (future._end_time - start_time) * 1000
+                        if hasattr(future, "_end_time") else 0
+                    )
 
                     yield ProcessingResult(
                         success=True,
@@ -74,7 +81,7 @@ class ParallelProcessor:
                     yield ProcessingResult(
                         success=False,
                         data=None,
-                        error=f"Batch {batch_id} timeout after {self.timeout}s",
+                        error=f"Batch {batch_id} timeout",
                     )
                 except Exception as e:
                     yield ProcessingResult(
@@ -103,7 +110,7 @@ class ParallelProcessor:
         """
         # Create batches
         batches = [
-            items[i : i + batch_size]
+            items[i:i + batch_size]
             for i in range(0, len(items), batch_size)
         ]
 
@@ -131,8 +138,14 @@ class ParallelProcessor:
         """
         # Map phase
         mapped_results = []
-        with concurrent.futures.ThreadPoolExecutor(max_workers=self.max_workers) as executor:
-            futures = [executor.submit(map_func, item, **kwargs) for item in items]
+        with concurrent.futures.ThreadPoolExecutor(
+            max_workers=self.max_workers
+        ) as executor:
+            futures = [
+                executor.submit(
+                    map_func, item, **kwargs
+                ) for item in items
+            ]
             for future in concurrent.futures.as_completed(futures):
                 try:
                     result = future.result(timeout=self.timeout)

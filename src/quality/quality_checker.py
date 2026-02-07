@@ -42,14 +42,18 @@ class QualityChecker:
             "records_total": records_total,
             "records_valid": records_valid,
             "records_invalid": records_invalid,
-            "valid_percentage": (records_valid / records_total * 100) if records_total > 0 else 0,
+            "valid_percentage": (
+                (records_valid / records_total * 100)
+                if records_total > 0 else 0
+            ),
             "issues": issues or [],
         }
 
         self.checks_history.append(check_record)
         logger.info(
             f"Quality check '{check_name}': "
-            f"{records_valid}/{records_total} valid ({check_record['valid_percentage']:.1f}%)"
+            f"{records_valid}/{records_total} valid "
+            f"({check_record['valid_percentage']:.1f}%)"
         )
 
     def get_quality_score(self) -> float:
@@ -68,7 +72,10 @@ class QualityChecker:
             total_records += check["records_total"]
             total_valid += check["records_valid"]
 
-        score = (total_valid / total_records * 100) if total_records > 0 else 100.0
+        score = (
+            (total_valid / total_records * 100)
+            if total_records > 0 else 100.0
+        )
         self.quality_score = score
         return score
 
@@ -82,11 +89,21 @@ class QualityChecker:
             "timestamp": datetime.utcnow().isoformat(),
             "overall_score": self.get_quality_score(),
             "total_checks": len(self.checks_history),
-            "passed_checks": sum(1 for c in self.checks_history if c["passed"]),
-            "failed_checks": sum(1 for c in self.checks_history if not c["passed"]),
-            "total_records_checked": sum(c["records_total"] for c in self.checks_history),
-            "total_valid_records": sum(c["records_valid"] for c in self.checks_history),
-            "total_invalid_records": sum(c["records_invalid"] for c in self.checks_history),
+            "passed_checks": sum(
+                1 for c in self.checks_history if c["passed"]
+            ),
+            "failed_checks": sum(
+                1 for c in self.checks_history if not c["passed"]
+            ),
+            "total_records_checked": sum(
+                c["records_total"] for c in self.checks_history
+            ),
+            "total_valid_records": sum(
+                c["records_valid"] for c in self.checks_history
+            ),
+            "total_invalid_records": sum(
+                c["records_invalid"] for c in self.checks_history
+            ),
             "checks": self.checks_history,
         }
 
@@ -149,16 +166,19 @@ class QualityChecker:
         print(f"Total Checks: {report['total_checks']}")
         print(f"  [DONE] Passed: {report['passed_checks']}")
         print(f"  ✗ Failed: {report['failed_checks']}")
-        print(f"\nRecords Summary:")
+        print("\nRecords Summary:")
         print(f"  Total Checked: {report['total_records_checked']:,}")
         print(f"  Valid: {report['total_valid_records']:,}")
         print(f"  Invalid: {report['total_invalid_records']:,}")
 
-        print(f"\nDetailed Checks:")
+        print("\nDetailed Checks:")
         print("-" * 70)
         for check in report["checks"]:
             status = "[DONE] PASS" if check["passed"] else "✗ FAIL"
-            print(f"{status} | {check['check_name']}: {check['valid_percentage']:.1f}% valid")
+            print(
+                f"{status} | {check['check_name']}: "
+                f"{check['valid_percentage']:.1f}% valid"
+            )
             if check["issues"]:
                 for issue in check["issues"]:
                     print(f"       └─ {issue}")

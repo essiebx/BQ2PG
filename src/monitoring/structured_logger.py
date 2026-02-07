@@ -47,7 +47,9 @@ class StructuredFormatter(logging.Formatter):
 class StructuredLogger:
     """Provides structured logging interface."""
 
-    def __init__(self, name: str, level: str = "INFO", log_file: Optional[str] = None):
+    def __init__(
+        self, name: str, level: str = "INFO", log_file: Optional[str] = None
+    ):
         """Initialize structured logger.
 
         Args:

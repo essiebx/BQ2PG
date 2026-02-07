@@ -89,7 +89,10 @@ class RetryPolicy:
                     )
                     time.sleep(delay)
                 else:
-                    logger.error(f"All {self.max_retries + 1} retry attempts failed: {e}")
+                    logger.error(
+                        f"All {self.max_retries + 1} retry attempts failed: "
+                        f"{e}"
+                    )
 
         raise last_exception
 

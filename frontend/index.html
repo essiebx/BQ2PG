@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BQ2PG - BigQuery to PostgreSQL Migration Tool</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+    <div class="bg-orb orb-1"></div>
+    <div class="bg-orb orb-2"></div>
+    <div class="container">
+        <header>
+            <div class="logo-wrapper">
+                <img src="bq2pg-logo.jpg" alt="BQ2PG Logo" class="logo-image">
+            </div>
+            <h1 class="brand-title">BQ2PG</h1>
+            <p class="brand-subtitle">Database Migration Engine</p>
+        </header>
+
+        <div class="progress-tracker">
+            <div class="step" data-step="1">
+                <div class="step-number active">1</div>
+                <div class="step-label">Credentials</div>
+            </div>
+            <div class="step-line"></div>
+            <div class="step" data-step="2">
+                <div class="step-number">2</div>
+                <div class="step-label">BigQuery</div>
+            </div>
+            <div class="step-line"></div>
+            <div class="step" data-step="3">
+                <div class="step-number">3</div>
+                <div class="step-label">PostgreSQL</div>
+            </div>
+            <div class="step-line"></div>
+            <div class="step" data-step="4">
+                <div class="step-number">4</div>
+                <div class="step-label">Migrate</div>
+            </div>
+        </div>
+
+        <main>
+            <!-- Step 1: Upload Credentials -->
+            <section id="step1" class="step-content active">
+                <h2>Step 1: Upload Google Cloud Credentials</h2>
+                <p class="help-text">Securely upload your Google Cloud service account JSON file to authenticate with
+                    BigQuery</p>
+
+                <div class="upload-area" id="uploadArea">
+                    <input type="file" id="credentialsFile" accept=".json" hidden>
+                    <div class="upload-icon-container">
+                        <svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M24 4v28M10 18l14-14 14 14M12 44h24a2 2 0 0 0 2-2v-12" fill="none"
+                                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                        </svg>
+                    </div>
+                    <p class="upload-prompt">Drag and drop your credentials.json here</p>
+                    <div class="upload-divider">or</div>
+                    <button class="btn-file-browse" onclick="document.getElementById('credentialsFile').click()">
+                        Select File
+                    </button>
+                </div>
+
+                <div id="credentialsStatus" class="status-message" style="display: none;"></div>
+
+                <div class="button-group">
+                    <button class="btn-primary" id="validateCredentials" disabled>
+                        Validate & Continue
+                    </button>
+                </div>
+            </section>
+
+            <!-- Step 2: BigQuery Configuration -->
+            <section id="step2" class="step-content">
+                <h2>Step 2: Configure BigQuery Source</h2>
+                <p class="help-text">Select the BigQuery project, dataset, and table to migrate</p>
+
+                <form id="bigqueryForm" class="config-form">
+                    <div class="form-group">
+                        <label for="projectId">Project ID</label>
+                        <input type="text" id="projectId" placeholder="my-gcp-project" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="dataset">Dataset</label>
+                        <input type="text" id="dataset" placeholder="my_dataset" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="table">Table</label>
+                        <input type="text" id="table" placeholder="my_table" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="rowLimit">Row Limit (optional)</label>
+                        <input type="number" id="rowLimit" placeholder="Leave empty for all rows" min="1">
+                        <small>Tip: Start with a small number for testing</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="whereClause">WHERE Clause (optional)</label>
+                        <input type="text" id="whereClause" placeholder="e.g., year >= 2020">
+                    </div>
+                </form>
+
+                <div id="bqStatus" class="status-message" style="display: none;"></div>
+
+                <div class="button-group">
+                    <button class="btn-secondary" onclick="goToStep(1)">Back</button>
+                    <button class="btn-primary" id="testBigQuery">Test Connection & Continue</button>
+                </div>
+            </section>
+
+            <!-- Step 3: PostgreSQL Configuration -->
+            <section id="step3" class="step-content">
+                <h2>Step 3: Configure PostgreSQL Destination</h2>
+                <p class="help-text">Set up your PostgreSQL database connection and target table</p>
+
+                <form id="postgresForm" class="config-form">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="pgHost">Host</label>
+                            <input type="text" id="pgHost" value="localhost" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="pgPort">Port</label>
+                            <input type="number" id="pgPort" value="5432" required>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="pgDatabase">Database Name</label>
+                        <input type="text" id="pgDatabase" placeholder="migration_db" required>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="pgUser">Username</label>
+                            <input type="text" id="pgUser" placeholder="postgres" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="pgPassword">Password</label>
+                            <input type="password" id="pgPassword" placeholder="••••••••" required>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="pgTable">Target Table Name</label>
+                        <input type="text" id="pgTable" placeholder="imported_table" required>
+                    </div>
+
+                    <div class="form-group checkbox-group">
+                        <input type="checkbox" id="dropTable">
+                        <label for="dropTable" class="checkbox-label">Drop table if exists (overwrites existing
+                            data)</label>
+                    </div>
+                </form>
+
+                <div id="pgStatus" class="status-message" style="display: none;"></div>
+
+                <div class="button-group">
+                    <button class="btn-secondary" onclick="goToStep(2)">Back</button>
+                    <button class="btn-primary" id="testPostgres">Test Connection & Continue</button>
+                </div>
+            </section>
+
+            <!-- Step 4: Migration -->
+            <section id="step4" class="step-content">
+                <h2>Step 4: Execute Migration</h2>
+                <p class="help-text">Review your configuration and begin the data migration</p>
+
+                <div class="config-summary">
+                    <h3 class="summary-title">Configuration Review</h3>
+                    <div class="summary-section">
+                        <div class="summary-block">
+                            <div class="summary-type">Source</div>
+                            <div class="summary-content" id="summarySource">-</div>
+                        </div>
+                        <div class="summary-block">
+                            <div class="summary-type">Destination</div>
+                            <div class="summary-content" id="summaryDest">-</div>
+                        </div>
+                        <div class="summary-block">
+                            <div class="summary-type">Row Limit</div>
+                            <div class="summary-content" id="summaryRows">-</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="migrationProgress" style="display: none;">
+                    <div class="progress-section">
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="progressFill"></div>
+                        </div>
+                        <div class="progress-stats">
+                            <span id="progressText">Preparing migration...</span>
+                            <span id="progressPercent">0%</span>
+                        </div>
+                    </div>
+
+                    <div class="migration-stats">
+                        <div class="stat">
+                            <div class="stat-value" id="rowsExtracted">0</div>
+                            <div class="stat-label">Extracted</div>
+                        </div>
+                        <div class="stat">
+                            <div class="stat-value" id="rowsLoaded">0</div>
+                            <div class="stat-label">Loaded</div>
+                        </div>
+                        <div class="stat">
+                            <div class="stat-value" id="rowsFailed">0</div>
+                            <div class="stat-label">Failed</div>
+                        </div>
+                        <div class="stat">
+                            <div class="stat-value" id="elapsedTime">0s</div>
+                            <div class="stat-label">Elapsed Time</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="migrationResult" style="display: none;">
+                    <div class="result-container">
+                        <div class="result-status" id="resultIcon"></div>
+                        <h3 class="result-heading" id="resultTitle">Migration Complete</h3>
+                        <p class="result-text" id="resultMessage"></p>
+                        <button class="btn-download" onclick="downloadLogs()">Download Migration Log</button>
+                    </div>
+                </div>
+
+                <div class="button-group">
+                    <button class="btn-secondary" onclick="goToStep(3)" id="backToConfig">Back</button>
+                    <button class="btn-primary" id="startMigration">Start Migration</button>
+                    <button class="btn-secondary" onclick="resetMigration()" id="resetBtn" style="display: none;">
+                        New Migration
+                    </button>
+                </div>
+            </section>
+        </main>
+
+        <footer>
+            <p>BQ2PG v1.0.0 | Open Source Database Migration | <a href="https://github.com" target="_blank">View on
+                    GitHub</a></p>
+        </footer>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+
+</html>
