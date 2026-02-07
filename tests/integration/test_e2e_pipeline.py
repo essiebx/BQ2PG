@@ -1,8 +1,7 @@
 """End-to-end integration tests for the pipeline."""
 
 import pytest
-import json
-from pathlib import Path
+
 from unittest.mock import MagicMock, patch
 
 from src.config.config_manager import ConfigManager
@@ -47,7 +46,9 @@ database:
 
     def test_checkpoint_recovery(self, temp_dir):
         """Test checkpoint save and recovery."""
-        checkpoint_manager = CheckpointManager(checkpoint_dir=str(temp_dir / "checkpoints"))
+        checkpoint_manager = CheckpointManager(
+            checkpoint_dir=str(temp_dir / "checkpoints")
+        )
 
         # Save checkpoint
         checkpoint_data = {
@@ -64,7 +65,9 @@ database:
         assert checkpoint_id is not None
 
         # Load checkpoint
-        loaded = checkpoint_manager.load_checkpoint("test_pipeline", checkpoint_id)
+        loaded = checkpoint_manager.load_checkpoint(
+            "test_pipeline", checkpoint_id
+        )
 
         assert loaded is not None
         assert loaded["data"]["last_record_id"] == 1000
@@ -78,8 +81,18 @@ database:
         record1 = {"id": 1, "name": "Alice", "error_field": "invalid_value"}
         record2 = {"id": 2, "name": "Bob", "error_field": None}
 
-        dlq.enqueue(record1, "Type validation failed", source="transform", retry_count=3)
-        dlq.enqueue(record2, "Not null constraint violated", source="load", retry_count=5)
+        dlq.enqueue(
+            record1,
+            "Type validation failed",
+            source="transform",
+            retry_count=3,
+        )
+        dlq.enqueue(
+            record2,
+            "Not null constraint violated",
+            source="load",
+            retry_count=5,
+        )
 
         # Get stats
         stats = dlq.get_dlq_stats()
@@ -91,7 +104,10 @@ database:
         # Get records
         records = dlq.get_records()
         assert len(records) == 2
-        assert records[0]["error"] in ["Type validation failed", "Not null constraint violated"]
+        assert records[0]["error"] in [
+            "Type validation failed",
+            "Not null constraint violated",
+        ]
 
     def test_integrated_config_and_secrets(self):
         """Test integrated config and secret manager workflow."""
@@ -104,7 +120,7 @@ database:
             manager = ConfigManager(project_id="test_project")
 
             # Try to get database config with secrets
-            db_config = manager.get_database_config()
+            _ = manager.get_database_config()
 
             # Should attempt to load password from secrets
             if manager.secret_manager:
@@ -118,7 +134,9 @@ database:
         checkpoint_dir.mkdir()
         dlq_dir.mkdir()
 
-        checkpoint_manager = CheckpointManager(checkpoint_dir=str(checkpoint_dir))
+        checkpoint_manager = CheckpointManager(
+            checkpoint_dir=str(checkpoint_dir)
+        )
         dlq = DeadLetterQueue(dlq_dir=str(dlq_dir))
 
         # Simulate pipeline processing

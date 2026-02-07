@@ -2,7 +2,6 @@
 
 import pytest
 import time
-import random
 from src.performance.parallel_processor import ParallelProcessor
 from src.performance.memory_optimizer import MemoryOptimizer
 from src.performance.connection_pool import ConnectionPool
@@ -33,7 +32,8 @@ class TestParallelProcessing:
         assert len(results) == 4
         assert all(r.success for r in results)
 
-        # Parallel should be faster than sequential (0.1 * 4 = 0.4 seconds sequential)
+        # Parallel should be faster than sequential
+        # (0.1 * 4 = 0.4 seconds sequential)
         # Parallel should complete in ~0.15 seconds (with overhead)
         assert parallel_time < 0.35  # Some buffer for overhead
 

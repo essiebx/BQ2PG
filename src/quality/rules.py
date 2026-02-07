@@ -40,7 +40,9 @@ class ValidationRule:
             Tuple of (is_valid, error_message).
         """
         if self.rule_type == RuleType.NOT_NULL:
-            if value is None or (isinstance(value, str) and value.strip() == ""):
+            if value is None or (
+                isinstance(value, str) and value.strip() == ""
+            ):
                 return False, f"{self.error_message} (value: {value})"
             return True, None
 
@@ -51,14 +53,20 @@ class ValidationRule:
         elif self.rule_type == RuleType.RANGE:
             min_val, max_val = self.condition
             if not (min_val <= value <= max_val):
-                return False, f"{self.error_message} (value: {value}, range: {min_val}-{max_val})"
+                return False, (
+                    f"{self.error_message} (value: {value}, "
+                    f"range: {min_val}-{max_val})"
+                )
             return True, None
 
         elif self.rule_type == RuleType.PATTERN:
             import re
 
             if not re.match(self.condition, str(value)):
-                return False, f"{self.error_message} (value: {value}, pattern: {self.condition})"
+                return False, (
+                    f"{self.error_message} (value: {value}, "
+                    f"pattern: {self.condition})"
+                )
             return True, None
 
         elif self.rule_type == RuleType.CUSTOM:
@@ -98,7 +106,9 @@ class RuleSet:
         self.rules[rule.column].append(rule)
         logger.debug(f"Added rule '{rule.name}' for column '{rule.column}'")
 
-    def add_not_null_rule(self, column: str, error_message: str = None) -> None:
+    def add_not_null_rule(
+        self, column: str, error_message: str = None
+    ) -> None:
         """Add a not-null rule.
 
         Args:
@@ -115,7 +125,13 @@ class RuleSet:
         )
         self.add_rule(rule)
 
-    def add_range_rule(self, column: str, min_val: float, max_val: float, error_message: str = None) -> None:
+    def add_range_rule(
+        self,
+        column: str,
+        min_val: float,
+        max_val: float,
+        error_message: str = None
+    ) -> None:
         """Add a range validation rule.
 
         Args:
@@ -124,7 +140,9 @@ class RuleSet:
             max_val: Maximum value.
             error_message: Custom error message.
         """
-        error_msg = error_message or f"Column '{column}' must be between {min_val} and {max_val}"
+        error_msg = error_message or (
+            f"Column '{column}' must be between {min_val} and {max_val}"
+        )
         rule = ValidationRule(
             name=f"{column}_range_{min_val}_{max_val}",
             rule_type=RuleType.RANGE,
@@ -134,7 +152,9 @@ class RuleSet:
         )
         self.add_rule(rule)
 
-    def add_pattern_rule(self, column: str, pattern: str, error_message: str = None) -> None:
+    def add_pattern_rule(
+        self, column: str, pattern: str, error_message: str = None
+    ) -> None:
         """Add a pattern validation rule.
 
         Args:
@@ -142,7 +162,9 @@ class RuleSet:
             pattern: Regex pattern.
             error_message: Custom error message.
         """
-        error_msg = error_message or f"Column '{column}' does not match pattern '{pattern}'"
+        error_msg = error_message or (
+            f"Column '{column}' does not match pattern '{pattern}'"
+        )
         rule = ValidationRule(
             name=f"{column}_pattern_{pattern[:20]}",
             rule_type=RuleType.PATTERN,
@@ -152,7 +174,9 @@ class RuleSet:
         )
         self.add_rule(rule)
 
-    def add_custom_rule(self, column: str, validator_func: Callable, error_message: str) -> None:
+    def add_custom_rule(
+        self, column: str, validator_func: Callable, error_message: str
+    ) -> None:
         """Add a custom validation rule.
 
         Args:

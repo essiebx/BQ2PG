@@ -1,9 +1,10 @@
 """Unit tests for monitoring modules."""
 
-import pytest
 import json
-from pathlib import Path
-from src.monitoring.structured_logger import StructuredLogger, StructuredFormatter
+from src.monitoring.structured_logger import (
+    StructuredLogger,
+    StructuredFormatter,
+)
 from src.monitoring.metrics import MetricsCollector
 
 
@@ -94,7 +95,9 @@ class TestMetricsCollector:
         """Test recording load metrics."""
         collector = MetricsCollector()
 
-        collector.record_load(record_count=500, duration_seconds=2.0, failed=10)
+        collector.record_load(
+            record_count=500, duration_seconds=2.0, failed=10
+        )
 
         summary = collector.get_metrics_summary()
         assert summary["records_loaded"] >= 490
