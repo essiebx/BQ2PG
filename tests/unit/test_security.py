@@ -9,7 +9,9 @@ from src.security.credential_manager import CredentialManager
 class TestSecretManager:
     """Test SecretManager class."""
 
-    @patch("src.security.secret_manager.secretmanager.SecretManagerServiceClient")
+    @patch(
+        "src.security.secret_manager.secretmanager.SecretManagerServiceClient"
+    )
     def test_get_secret(self, mock_client_class):
         """Test retrieving a secret."""
         mock_client = MagicMock()
@@ -26,7 +28,9 @@ class TestSecretManager:
         assert secret == "secret_value"
         mock_client.access_secret_version.assert_called_once()
 
-    @patch("src.security.secret_manager.secretmanager.SecretManagerServiceClient")
+    @patch(
+        "src.security.secret_manager.secretmanager.SecretManagerServiceClient"
+    )
     def test_get_secret_json(self, mock_client_class):
         """Test retrieving a secret as JSON."""
         mock_client = MagicMock()
@@ -49,7 +53,9 @@ class TestSecretManager:
         with pytest.raises(ValueError, match="project_id must be set"):
             manager.get_secret("test_secret")
 
-    @patch("src.security.secret_manager.secretmanager.SecretManagerServiceClient")
+    @patch(
+        "src.security.secret_manager.secretmanager.SecretManagerServiceClient"
+    )
     def test_get_database_credentials(self, mock_client_class):
         """Test retrieving database credentials."""
         mock_client = MagicMock()
@@ -106,7 +112,9 @@ class TestCredentialManager:
 
     def test_validate_credentials_missing(self, mock_secret_manager):
         """Test validation with missing credentials."""
-        mock_secret_manager.get_secret.side_effect = Exception("Secret not found")
+        mock_secret_manager.get_secret.side_effect = Exception(
+            "Secret not found"
+        )
         manager = CredentialManager(mock_secret_manager)
 
         results = manager.validate_credentials()
@@ -119,6 +127,7 @@ class TestCredentialManager:
         manager = CredentialManager(mock_secret_manager)
         needs_rotation, days = manager.check_credential_age("test_secret")
 
-        # Since we're not mocking secret creation time, this tests the error path
+        # Since we're not mocking secret creation time,
+        # this tests the error path
         assert isinstance(needs_rotation, bool)
         assert isinstance(days, int)

@@ -1,7 +1,7 @@
 """Checkpoint management for pipeline recovery."""
 
 import json
-import os
+
 import logging
 from typing import Any, Dict, Optional
 from pathlib import Path
@@ -22,7 +22,10 @@ class CheckpointManager:
         self.checkpoint_dir = Path(checkpoint_dir)
         self.checkpoint_dir.mkdir(exist_ok=True)
         self.current_checkpoint: Optional[Dict[str, Any]] = None
-        logger.info(f"Initialized checkpoint manager with directory: {self.checkpoint_dir}")
+        logger.info(
+            f"Initialized checkpoint manager with directory: "
+            f"{self.checkpoint_dir}"
+        )
 
     def save_checkpoint(
         self,
@@ -34,7 +37,8 @@ class CheckpointManager:
 
         Args:
             pipeline_name: Name of the pipeline.
-            checkpoint_data: Data to checkpoint (last processed record, offset, etc.).
+            checkpoint_data: Data to checkpoint (last processed record,
+                            offset, etc.).
             metadata: Optional metadata (e.g., duration, records processed).
 
         Returns:
@@ -49,19 +53,25 @@ class CheckpointManager:
             "metadata": metadata or {},
         }
 
-        checkpoint_file = self.checkpoint_dir / f"checkpoint_{pipeline_name}_{checkpoint_id}.json"
+        checkpoint_file = self.checkpoint_dir / (
+            f"checkpoint_{pipeline_name}_{checkpoint_id}.json"
+        )
 
         try:
             with open(checkpoint_file, "w") as f:
                 json.dump(checkpoint_info, f, indent=2, default=str)
             self.current_checkpoint = checkpoint_info
-            logger.info(f"Saved checkpoint {checkpoint_id} for {pipeline_name}")
+            logger.info(
+                f"Saved checkpoint {checkpoint_id} for {pipeline_name}"
+            )
             return checkpoint_id
         except Exception as e:
             logger.error(f"Failed to save checkpoint: {e}")
             raise
 
-    def load_checkpoint(self, pipeline_name: str, checkpoint_id: Optional[str] = None) -> Optional[Dict[str, Any]]:
+    def load_checkpoint(
+        self, pipeline_name: str, checkpoint_id: Optional[str] = None
+    ) -> Optional[Dict[str, Any]]:
         """Load a checkpoint for the pipeline.
 
         Args:
@@ -73,11 +83,15 @@ class CheckpointManager:
         """
         try:
             if checkpoint_id:
-                checkpoint_file = self.checkpoint_dir / f"checkpoint_{pipeline_name}_{checkpoint_id}.json"
+                checkpoint_file = self.checkpoint_dir / (
+                    f"checkpoint_{pipeline_name}_{checkpoint_id}.json"
+                )
             else:
                 # Find the latest checkpoint
                 checkpoints = sorted(
-                    self.checkpoint_dir.glob(f"checkpoint_{pipeline_name}_*.json"),
+                    self.checkpoint_dir.glob(
+                        f"checkpoint_{pipeline_name}_*.json"
+                    ),
                     reverse=True,
                 )
                 if not checkpoints:
@@ -92,13 +106,18 @@ class CheckpointManager:
             with open(checkpoint_file) as f:
                 checkpoint_info = json.load(f)
             self.current_checkpoint = checkpoint_info
-            logger.info(f"Loaded checkpoint {checkpoint_info['id']} for {pipeline_name}")
+            logger.info(
+                f"Loaded checkpoint {checkpoint_info['id']} "
+                f"for {pipeline_name}"
+            )
             return checkpoint_info
         except Exception as e:
             logger.error(f"Failed to load checkpoint: {e}")
             return None
 
-    def get_recovery_point(self, pipeline_name: str) -> Optional[Dict[str, Any]]:
+    def get_recovery_point(
+        self, pipeline_name: str
+    ) -> Optional[Dict[str, Any]]:
         """Get the recovery point (last checkpoint data) for a pipeline.
 
         Args:
@@ -112,7 +131,9 @@ class CheckpointManager:
             return checkpoint.get("data")
         return None
 
-    def delete_checkpoint(self, pipeline_name: str, checkpoint_id: Optional[str] = None) -> bool:
+    def delete_checkpoint(
+        self, pipeline_name: str, checkpoint_id: Optional[str] = None
+    ) -> bool:
         """Delete a checkpoint.
 
         Args:
@@ -124,14 +145,18 @@ class CheckpointManager:
         """
         try:
             if checkpoint_id:
-                checkpoint_file = self.checkpoint_dir / f"checkpoint_{pipeline_name}_{checkpoint_id}.json"
+                checkpoint_file = self.checkpoint_dir / (
+                    f"checkpoint_{pipeline_name}_{checkpoint_id}.json"
+                )
                 if checkpoint_file.exists():
                     checkpoint_file.unlink()
                     logger.info(f"Deleted checkpoint {checkpoint_id}")
                     return True
             else:
                 # Delete all checkpoints for pipeline
-                for checkpoint_file in self.checkpoint_dir.glob(f"checkpoint_{pipeline_name}_*.json"):
+                for checkpoint_file in self.checkpoint_dir.glob(
+                    f"checkpoint_{pipeline_name}_*.json"
+                ):
                     checkpoint_file.unlink()
                     logger.info(f"Deleted checkpoint {checkpoint_file.name}")
                 return True
@@ -175,7 +200,9 @@ class CheckpointManager:
         Returns:
             Statistics dictionary.
         """
-        checkpoints = list(self.checkpoint_dir.glob(f"checkpoint_{pipeline_name}_*.json"))
+        checkpoints = list(
+            self.checkpoint_dir.glob(f"checkpoint_{pipeline_name}_*.json")
+        )
         total_size = sum(f.stat().st_size for f in checkpoints)
 
         return {
@@ -186,7 +213,9 @@ class CheckpointManager:
             "newest": checkpoints[0].stat().st_mtime if checkpoints else None,
         }
 
-    def cleanup_old_checkpoints(self, pipeline_name: str, keep_count: int = 5) -> int:
+    def cleanup_old_checkpoints(
+        self, pipeline_name: str, keep_count: int = 5
+    ) -> int:
         """Clean up old checkpoints, keeping only the most recent ones.
 
         Args:

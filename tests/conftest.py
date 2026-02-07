@@ -1,7 +1,7 @@
 """Pytest configuration and fixtures."""
 
 import pytest
-import os
+
 import tempfile
 import logging
 from pathlib import Path
@@ -69,9 +69,24 @@ def mock_bigquery_client():
 def sample_records():
     """Provide sample records for testing."""
     return [
-        {"id": 1, "name": "Alice", "email": "alice@example.com", "created_at": "2024-01-01"},
-        {"id": 2, "name": "Bob", "email": "bob@example.com", "created_at": "2024-01-02"},
-        {"id": 3, "name": "Charlie", "email": "charlie@example.com", "created_at": "2024-01-03"},
+        {
+            "id": 1,
+            "name": "Alice",
+            "email": "alice@example.com",
+            "created_at": "2024-01-01",
+        },
+        {
+            "id": 2,
+            "name": "Bob",
+            "email": "bob@example.com",
+            "created_at": "2024-01-02",
+        },
+        {
+            "id": 3,
+            "name": "Charlie",
+            "email": "charlie@example.com",
+            "created_at": "2024-01-03",
+        },
     ]
 
 
@@ -111,8 +126,12 @@ def cleanup_files():
 def pytest_configure(config):
     """Configure pytest with custom markers."""
     config.addinivalue_line("markers", "unit: mark test as a unit test")
-    config.addinivalue_line("markers", "integration: mark test as an integration test")
-    config.addinivalue_line("markers", "performance: mark test as a performance test")
+    config.addinivalue_line(
+        "markers", "integration: mark test as an integration test"
+    )
+    config.addinivalue_line(
+        "markers", "performance: mark test as a performance test"
+    )
     config.addinivalue_line("markers", "slow: mark test as slow")
 
 

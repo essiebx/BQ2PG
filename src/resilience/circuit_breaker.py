@@ -70,7 +70,7 @@ class CircuitBreaker:
             result = func(*args, **kwargs)
             self._on_success()
             return result
-        except self.expected_exception as e:
+        except self.expected_exception:
             self._on_failure()
             raise
 
@@ -80,7 +80,9 @@ class CircuitBreaker:
             if self.last_failure_time and (
                 time.time() - self.last_failure_time >= self.recovery_timeout
             ):
-                logger.info("Circuit breaker attempting recovery (HALF_OPEN state)")
+                logger.info(
+                    "Circuit breaker attempting recovery (HALF_OPEN state)"
+                )
                 self.state = CircuitState.HALF_OPEN
                 self.failure_count = 0
                 self.success_count = 0
@@ -105,7 +107,10 @@ class CircuitBreaker:
             logger.error("Recovery failed (OPEN state)")
             self.state = CircuitState.OPEN
         elif self.failure_count >= self.failure_threshold:
-            logger.error(f"Failure threshold reached ({self.failure_threshold}). Opening circuit.")
+            logger.error(
+                f"Failure threshold reached ({self.failure_threshold}). "
+                "Opening circuit."
+            )
             self.state = CircuitState.OPEN
 
     def __call__(self, func: Callable[..., T]) -> Callable[..., T]:

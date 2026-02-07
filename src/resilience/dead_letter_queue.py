@@ -1,7 +1,7 @@
 """Dead Letter Queue for handling failed records."""
 
 import json
-import os
+
 import logging
 from datetime import datetime
 from typing import Any, Dict, List, Optional
@@ -84,7 +84,9 @@ class DeadLetterQueue:
                 parts = dlq_file.stem.split("_")
                 if len(parts) >= 2:
                     source = parts[1]
-                    stats["by_source"][source] = stats["by_source"].get(source, 0) + record_count
+                    stats["by_source"][source] = (
+                        stats["by_source"].get(source, 0) + record_count
+                    )
 
                 stats["files"].append({
                     "name": dlq_file.name,
@@ -97,7 +99,9 @@ class DeadLetterQueue:
 
         return stats
 
-    def get_records(self, source: Optional[str] = None, limit: int = 100) -> List[Dict[str, Any]]:
+    def get_records(
+        self, source: Optional[str] = None, limit: int = 100
+    ) -> List[Dict[str, Any]]:
         """Get records from DLQ.
 
         Args:
@@ -132,7 +136,9 @@ class DeadLetterQueue:
 
         return records
 
-    def replay_records(self, callback, source: Optional[str] = None) -> Dict[str, int]:
+    def replay_records(
+        self, callback, source: Optional[str] = None
+    ) -> Dict[str, int]:
         """Replay DLQ records through a callback function.
 
         Args:
@@ -164,7 +170,9 @@ class DeadLetterQueue:
 
         return stats
 
-    def clear_dlq(self, source: Optional[str] = None, older_than_days: int = 0) -> int:
+    def clear_dlq(
+        self, source: Optional[str] = None, older_than_days: int = 0
+    ) -> int:
         """Clear DLQ files.
 
         Args:
@@ -178,7 +186,9 @@ class DeadLetterQueue:
 
         try:
             pattern = f"dlq_{source}_*.jsonl" if source else "dlq_*.jsonl"
-            cutoff_time = datetime.utcnow().timestamp() - (older_than_days * 86400)
+            cutoff_time = datetime.utcnow().timestamp() - (
+                older_than_days * 86400
+            )
 
             for dlq_file in self.dlq_dir.glob(pattern):
                 file_time = dlq_file.stat().st_mtime

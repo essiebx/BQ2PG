@@ -45,17 +45,26 @@ class ConfigManager:
             if os.path.exists(base_config_file):
                 with open(base_config_file) as f:
                     self.config = yaml.safe_load(f) or {}
-                logger.info(f"Loaded base configuration from {base_config_file}")
+                logger.info(
+                    f"Loaded base configuration from {base_config_file}"
+                )
 
             # Load environment-specific config
-            env_config_file = os.path.join(self.config_path, "environments", f"{self.env}.yaml")
+            env_config_file = os.path.join(
+                self.config_path, "environments", f"{self.env}.yaml"
+            )
             if os.path.exists(env_config_file):
                 with open(env_config_file) as f:
                     env_config = yaml.safe_load(f) or {}
                     self._deep_merge(self.config, env_config)
-                    logger.info(f"Loaded {self.env} configuration from {env_config_file}")
+                    logger.info(
+                        f"Loaded {self.env} configuration from "
+                        f"{env_config_file}"
+                    )
             else:
-                logger.warning(f"Environment config file not found: {env_config_file}")
+                logger.warning(
+                    f"Environment config file not found: {env_config_file}"
+                )
 
             # Load environment variables
             self._load_env_vars()
@@ -67,7 +76,10 @@ class ConfigManager:
     def _deep_merge(self, base: Dict, override: Dict) -> None:
         """Deep merge override into base dictionary."""
         for key, value in override.items():
-            if key in base and isinstance(base[key], dict) and isinstance(value, dict):
+            if (
+                key in base and isinstance(base[key], dict) and
+                isinstance(value, dict)
+            ):
                 self._deep_merge(base[key], value)
             else:
                 base[key] = value
@@ -135,7 +147,9 @@ class ConfigManager:
             ValueError: If secret manager is not configured.
         """
         if not self.secret_manager:
-            raise ValueError("Secret manager not configured. Set GOOGLE_CLOUD_PROJECT.")
+            raise ValueError(
+                "Secret manager not configured. Set GOOGLE_CLOUD_PROJECT."
+            )
 
         if key:
             secret_json = self.secret_manager.get_secret_json(secret_id)
@@ -144,39 +158,13 @@ class ConfigManager:
             return self.secret_manager.get_secret(secret_id)
 
     def get_database_config(self) -> Dict[str, Any]:
-        """Get database configuration.
-
-        Returns:
-            Database connection configuration.
-        """
+        """Get database configuration."""
         db_config = self.get("database", {})
-
-        # Try to load password from secrets if not in config
-        if "password" not in db_config and self.secret_manager:
-            try:
-                db_config["password"] = self.secret_manager.get_secret("postgres-password")
-            except Exception as e:
-                logger.warning(f"Could not load password from secrets: {e}")
-
         return db_config
 
     def get_bigquery_config(self) -> Dict[str, Any]:
-        """Get BigQuery configuration.
-
-        Returns:
-            BigQuery configuration.
-        """
+        """Get BigQuery configuration."""
         bq_config = self.get("bigquery", {})
-
-        # Try to load service account from secrets if not in config
-        if "service_account_key" not in bq_config and self.secret_manager:
-            try:
-                bq_config["service_account_key"] = self.secret_manager.get_secret(
-                    "bigquery-service-account-key"
-                )
-            except Exception as e:
-                logger.warning(f"Could not load BigQuery service account from secrets: {e}")
-
         return bq_config
 
     def to_dict(self) -> Dict[str, Any]:
