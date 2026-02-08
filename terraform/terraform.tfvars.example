@@ -1,0 +1,21 @@
+# terraform/terraform.tfvars.example
+# Copy this to terraform.tfvars and fill in the values
+
+project_id   = "your-gcp-project-id"
+region       = "us-central1"
+bq_location  = "US"
+environment  = "prod"
+
+# GKE Configuration
+node_count              = 3
+min_nodes               = 3
+max_nodes               = 10
+use_preemptible_nodes   = false
+machine_type            = "n1-standard-4"
+
+# Cloud SQL Configuration
+cloudsql_machine_type   = "db-custom-4-16384"
+
+# Features
+enable_monitoring           = true
+enable_workload_identity    = true

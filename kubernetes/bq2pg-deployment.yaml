@@ -1,0 +1,266 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: bq2pg
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: bq2pg-config
+  namespace: bq2pg
+data:
+  settings.yaml: |
+    environment: production
+    source:
+      project_id: "{{ GCP_PROJECT }}"
+      dataset_id: "{{ BQ_DATASET }}"
+    destination:
+      host: postgres-service.bq2pg.svc.cluster.local
+      port: "5432"
+      database: bq2pg
+    pipeline:
+      batch_size: 5000
+      workers: 4
+      retry_attempts: 3
+      timeout_seconds: 3600
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: bq2pg-credentials
+  namespace: bq2pg
+type: Opaque
+stringData:
+  GOOGLE_APPLICATION_CREDENTIALS: /etc/credentials/service-account.json
+  DB_PASSWORD: "{{ DB_PASSWORD }}"
+  SLACK_WEBHOOK: "{{ SLACK_WEBHOOK }}"
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: bq2pg-logs
+  namespace: bq2pg
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: standard
+  resources:
+    requests:
+      storage: 50Gi
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: bq2pg-dlq
+  namespace: bq2pg
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: standard
+  resources:
+    requests:
+      storage: 20Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: bq2pg-pipeline
+  namespace: bq2pg
+spec:
+  replicas: 3
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      app: bq2pg-pipeline
+  template:
+    metadata:
+      labels:
+        app: bq2pg-pipeline
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8000"
+    spec:
+      serviceAccountName: bq2pg
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+      containers:
+      - name: pipeline
+        image: bq2pg:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8000
+          name: metrics
+        - containerPort: 5000
+          name: api
+        env:
+        - name: ENVIRONMENT
+          value: production
+        - name: LOG_LEVEL
+          value: INFO
+        - name: DB_HOST
+          value: postgres-service.bq2pg.svc.cluster.local
+        - name: GOOGLE_APPLICATION_CREDENTIALS
+          valueFrom:
+            secretKeyRef:
+              name: bq2pg-credentials
+              key: GOOGLE_APPLICATION_CREDENTIALS
+        - name: DB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: bq2pg-credentials
+              key: DB_PASSWORD
+        resources:
+          requests:
+            cpu: 500m
+            memory: 1Gi
+          limits:
+            cpu: 2
+            memory: 4Gi
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 5000
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 5000
+          initialDelaySeconds: 10
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 2
+        volumeMounts:
+        - name: config
+          mountPath: /app/config
+        - name: logs
+          mountPath: /app/logs
+        - name: dlq
+          mountPath: /app/dlq
+        - name: credentials
+          mountPath: /etc/credentials
+          readOnly: true
+      volumes:
+      - name: config
+        configMap:
+          name: bq2pg-config
+      - name: logs
+        persistentVolumeClaim:
+          claimName: bq2pg-logs
+      - name: dlq
+        persistentVolumeClaim:
+          claimName: bq2pg-dlq
+      - name: credentials
+        secret:
+          secretName: bq2pg-credentials
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: bq2pg-service
+  namespace: bq2pg
+spec:
+  type: ClusterIP
+  ports:
+  - port: 5000
+    targetPort: 5000
+    name: api
+  - port: 8000
+    targetPort: 8000
+    name: metrics
+  selector:
+    app: bq2pg-pipeline
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: bq2pg-hpa
+  namespace: bq2pg
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: bq2pg-pipeline
+  minReplicas: 3
+  maxReplicas: 10
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: bq2pg-pdb
+  namespace: bq2pg
+spec:
+  minAvailable: 2
+  selector:
+    matchLabels:
+      app: bq2pg-pipeline
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: bq2pg
+  namespace: bq2pg
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: bq2pg-role
+  namespace: bq2pg
+rules:
+- apiGroups: [""]
+  resources: ["pods", "pods/logs"]
+  verbs: ["get", "list", "watch"]
+- apiGroups: [""]
+  resources: ["configmaps", "secrets"]
+  verbs: ["get"]
+- apiGroups: ["apps"]
+  resources: ["deployments", "statefulsets"]
+  verbs: ["get", "list"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: bq2pg-rolebinding
+  namespace: bq2pg
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: bq2pg-role
+subjects:
+- kind: ServiceAccount
+  name: bq2pg
+  namespace: bq2pg
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: bq2pg-monitor
+  namespace: bq2pg
+spec:
+  selector:
+    matchLabels:
+      app: bq2pg-pipeline
+  endpoints:
+  - port: metrics
+    interval: 30s
+    path: /metrics
