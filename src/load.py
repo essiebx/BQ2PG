@@ -7,7 +7,7 @@ import pandas as pd
 from sqlalchemy import create_engine, text
 import numpy as np
 
-from .config import config
+from .app_config import config
 from .utils import logger, timer
 from .schema_mapper import generate_create_table_sql
 from .resilience import RetryPolicy, CircuitBreaker, DeadLetterQueue
