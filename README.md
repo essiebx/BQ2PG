@@ -1,6 +1,8 @@
 #  BlueQuery Migration Tool
+<img width="1887" height="931" alt="image" src="https://github.com/user-attachments/assets/41733c18-8a98-487e-8495-5657b6154dc7" />
 
-**Status**: Production Ready | **Version**: 1.1.0 | **Date**: February 2026
+
+**Version**: 1.1.0 | **Date**: February 2026
 
 ---
 
