@@ -11,7 +11,7 @@ class Config:
 
     # BigQuery
     GOOGLE_CLOUD_PROJECT = os.getenv(
-        'GOOGLE_CLOUD_PROJECT', 'just-landing-398407'
+        'GOOGLE_CLOUD_PROJECT', ''
     )
     GOOGLE_APPLICATION_CREDENTIALS = os.getenv(
         'GOOGLE_APPLICATION_CREDENTIALS', 'credentials/key.json'
@@ -28,6 +28,9 @@ class Config:
     DEFAULT_CHUNK_SIZE = int(os.getenv('DEFAULT_CHUNK_SIZE', '50000'))
     MAX_ROWS_PER_RUN = int(os.getenv('MAX_ROWS_PER_RUN', '1000000'))
     DEFAULT_SAMPLE_SIZE = int(os.getenv('DEFAULT_SAMPLE_SIZE', '10000'))
+
+    # Security
+    API_SECURITY_TOKEN = os.getenv('API_SECURITY_TOKEN', '')  # Empty means disabled
 
     @property
     def postgres_connection_string(self):
@@ -50,3 +53,6 @@ class Config:
         if not self.POSTGRES_PASSWORD:
             errors.append("POSTGRES_PASSWORD is required")
 
+
+# Global configuration instance
+config = Config()

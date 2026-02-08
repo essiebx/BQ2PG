@@ -4,21 +4,24 @@ BQ2PG API Server - Flask backend for web-based migration tool
 
 from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
 import json
 import uuid
 import threading
 import time
-from pathlib import Path
+import sys
+import re
 from datetime import datetime
-import sys
-
-# Add src to path
-import sys
+from functools import wraps
 from pathlib import Path
 
-# Get the project root directory
+# Add project root to path so we can import from src/
 project_root = Path(__file__).parent.parent
-sys.path.insert(0, str(project_root))
+if str(project_root) not in sys.path:
+    sys.path.insert(0, str(project_root))
+
+from src.app_config import config
 
 try:
     from src.extract import BigQueryExtractor
@@ -36,9 +39,70 @@ import psycopg2
 app = Flask(__name__, static_folder='../frontend', static_url_path='')
 CORS(app)
 
+# Security: Limit request body size to 5MB (protects against DoS)
+app.config['MAX_CONTENT_LENGTH'] = 5 * 1024 * 1024
+
+# Security: Rate Limiting
+limiter = Limiter(
+    app=app,
+    key_func=get_remote_address,
+    default_limits=["200 per day", "50 per hour"],
+    storage_uri="memory://",
+)
+
 # In-memory storage for migration jobs
 migration_jobs = {}
 migration_logs = {}
+
+@app.after_request
+def add_security_headers(response):
+    """Inject security headers into every response."""
+    response.headers['X-Frame-Options'] = 'DENY'
+    response.headers['X-Content-Type-Options'] = 'nosniff'
+    response.headers['X-XSS-Protection'] = '1; mode=block'
+    response.headers['Content-Security-Policy'] = "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:;"
+    response.headers['Strict-Transport-Security'] = 'max-age=31536000; includeSubDomains'
+    response.headers['Referrer-Policy'] = 'strict-origin-when-cross-origin'
+    return response
+
+def require_auth(f):
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        token = config.API_SECURITY_TOKEN
+        if not token:
+            return f(*args, **kwargs)
+        
+        user_token = request.headers.get('X-API-Token')
+        if user_token != token:
+            return jsonify({'error': 'Unauthorized: Invalid or missing security token'}), 401
+        return f(*args, **kwargs)
+    return decorated
+
+def validate_db_identifier(name):
+    """Ensure identifier consists only of alphanumeric characters and underscores."""
+    if not name:
+        return False
+    # Only allow letters, numbers, underscores, dashes, and single dots
+    return bool(re.match(r'^[a-zA-Z0-9_\-\.]+$', name))
+
+def scrub_sensitive_data(data):
+    """Recursively remove sensitive keys from dictionaries for safe logging/returning."""
+    if not isinstance(data, dict):
+        return data
+    
+    sensitive_keys = {'credentials', 'password', 'private_key', 'client_email', 'token_uri', 'private_key_id'}
+    scrubbed = {}
+    
+    for k, v in data.items():
+        if k.lower() in sensitive_keys:
+            scrubbed[k] = "********"
+        elif isinstance(v, dict):
+            scrubbed[k] = scrub_sensitive_data(v)
+        elif isinstance(v, list):
+            scrubbed[k] = [scrub_sensitive_data(i) if isinstance(i, dict) else i for i in v]
+        else:
+            scrubbed[k] = v
+    return scrubbed
 
 
 @app.route('/')
@@ -48,6 +112,8 @@ def index():
 
 
 @app.route('/api/validate-credentials', methods=['POST'])
+@require_auth
+@limiter.limit("10 per minute")
 def validate_credentials():
     """Validate Google Cloud credentials"""
     try:
@@ -82,16 +148,22 @@ def validate_credentials():
 
 
 @app.route('/api/test-bigquery', methods=['POST'])
+@require_auth
+@limiter.limit("20 per minute")
 def test_bigquery():
     """Test BigQuery connection and get row count"""
     try:
         data = request.json
-        credentials = data.get('credentials')
-        project_id = data.get('project_id')
         dataset = data.get('dataset')
         table = data.get('table')
-        
-        # Create BigQuery client
+        project_id = data.get('project_id')
+        credentials = data.get('credentials')
+
+        # 1. Validate table and dataset names first
+        if not validate_db_identifier(dataset) or not validate_db_identifier(table):
+            return jsonify({'success': False, 'error': 'Invalid dataset or table name format'}), 400
+
+        # 2. Extract and check credentials
         from google.oauth2 import service_account
         creds = service_account.Credentials.from_service_account_info(credentials)
         client = bigquery.Client(credentials=creds, project=project_id)
@@ -119,6 +191,8 @@ def test_bigquery():
 
 
 @app.route('/api/test-postgres', methods=['POST'])
+@require_auth
+@limiter.limit("20 per minute")
 def test_postgres():
     """Test PostgreSQL connection"""
     try:
@@ -151,6 +225,8 @@ def test_postgres():
 
 
 @app.route('/api/start-migration', methods=['POST'])
+@require_auth
+@limiter.limit("5 per minute")
 def start_migration():
     """Start a migration job"""
     try:
@@ -190,7 +266,7 @@ def migration_status(job_id):
     if job_id not in migration_jobs:
         return jsonify({'error': 'Job not found'}), 404
     
-    return jsonify(migration_jobs[job_id])
+    return jsonify(scrub_sensitive_data(migration_jobs[job_id]))
 
 
 @app.route('/api/migration-logs/<job_id>', methods=['GET'])
@@ -263,6 +339,10 @@ def run_migration(job_id, config):
         # Create table
         update_status(job_id, message="Creating target table...")
         
+        target_table = pg_config.get('table', 'patents')
+        if not validate_db_identifier(target_table):
+            raise ValueError(f"Invalid characters in target table name: {target_table}")
+
         if pg_config.get('drop_table'):
             log(job_id, f"Dropping table {pg_config['table']} if exists...")
             loader.drop_table(pg_config['table'])
@@ -348,15 +428,22 @@ def log(job_id, message):
     if job_id in migration_logs:
         migration_logs[job_id].append(log_message)
     
-    print(log_message)
+    # Mask sensitive data in console/file logs
+    safe_log = log_message
+    for key in ['password', 'private_key', 'client_email']:
+        if f"'{key}':" in safe_log or f'"{key}":' in safe_log:
+            safe_log = re.sub(rf'"{key}":\s*"[^"]+"', f'"{key}": "****"', safe_log)
+            safe_log = re.sub(rf"'{key}':\s*'[^']+'", f"'{key}': '****'", safe_log)
+    
+    print(safe_log)
 
 
 if __name__ == '__main__':
     print("=" * 60)
-    print("🚀 BQ2PG Migration Tool - API Server")
+    print(" 🚀 BlueQuery Migration Tool - API Server")
     print("=" * 60)
-    print(f"Server starting at: http://localhost:5000")
-    print(f"Web UI available at: http://localhost:5000")
+    print(f"Server starting, Access it at: http://localhost:5000")
     print("=" * 60)
     
+    # Run with explicit security defaults
     app.run(host='0.0.0.0', port=5000, debug=False, threaded=True)

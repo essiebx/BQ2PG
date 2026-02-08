@@ -4,12 +4,23 @@ let credentialsData = null;
 let migrationJobId = null;
 let migrationInterval = null;
 let startTime = null;
+let apiToken = null;
 
 // API base URL
 const API_BASE = window.location.origin;
 
 // Initialize
 document.addEventListener('DOMContentLoaded', () => {
+    // Check for security token in URL or locally
+    const urlParams = new URLSearchParams(window.location.search);
+    apiToken = urlParams.get('token') || localStorage.getItem('bq2pg_token');
+
+    if (urlParams.get('token')) {
+        localStorage.setItem('bq2pg_token', apiToken);
+        // Clean URL after capturing
+        window.history.replaceState({}, document.title, window.location.pathname);
+    }
+
     setupEventListeners();
     updateProgressTracker();
 });
@@ -91,9 +102,8 @@ async function validateCredentials() {
     showStatus('credentialsStatus', 'info', 'Validating credentials...');
 
     try {
-        const response = await fetch('/api/validate-credentials', {
+        const response = await secureFetch('/api/validate-credentials', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ credentials: credentialsData })
         });
 
@@ -130,9 +140,8 @@ async function testBigQuery() {
     showStatus('bqStatus', 'info', 'Testing connection...');
 
     try {
-        const response = await fetch('/api/test-bigquery', {
+        const response = await secureFetch('/api/test-bigquery', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 credentials: credentialsData,
                 project_id: projectId,
@@ -174,9 +183,8 @@ async function testPostgres() {
     showStatus('pgStatus', 'info', 'Testing connection...');
 
     try {
-        const response = await fetch('/api/test-postgres', {
+        const response = await secureFetch('/api/test-postgres', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(config)
         });
 
@@ -224,9 +232,8 @@ async function startMigration() {
     startTime = Date.now();
 
     try {
-        const response = await fetch('/api/start-migration', {
+        const response = await secureFetch('/api/start-migration', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(config)
         });
 
@@ -247,7 +254,7 @@ async function startMigration() {
 // Check Migration Status
 async function checkMigrationStatus() {
     try {
-        const response = await fetch(`/api/migration-status/${migrationJobId}`);
+        const response = await secureFetch(`/api/migration-status/${migrationJobId}`);
         const status = await response.json();
 
         updateMigrationUI(status);
@@ -319,7 +326,7 @@ async function downloadLogs() {
     if (!migrationJobId) return;
 
     try {
-        const response = await fetch(`/api/migration-logs/${migrationJobId}`);
+        const response = await secureFetch(`/api/migration-logs/${migrationJobId}`);
         const logs = await response.text();
 
         const blob = new Blob([logs], { type: 'text/plain' });
@@ -432,4 +439,29 @@ function formatTime(seconds) {
     if (h > 0) return `${h}h ${m}m ${s}s`;
     if (m > 0) return `${m}m ${s}s`;
     return `${s}s`;
+}
+
+// Security-aware Fetch Wrapper
+async function secureFetch(url, options = {}) {
+    const headers = {
+        'Content-Type': 'application/json',
+        ...options.headers
+    };
+
+    if (apiToken) {
+        headers['X-API-Token'] = apiToken;
+    }
+
+    const response = await fetch(url, {
+        ...options,
+        headers
+    });
+
+    if (response.status === 401) {
+        alert('Authentication Error: Access Denied. Please check your security token.');
+        localStorage.removeItem('bq2pg_token');
+        location.reload();
+    }
+
+    return response;
 }

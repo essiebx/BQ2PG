@@ -1,12 +1,12 @@
-# Contributing to BQ2PG
+# Contributing to BlueQuery
 
-Thank you for your interest in contributing to BQ2PG! This document provides guidelines for contributing to the project.
+Thank you for your interest in contributing to BlueQuery! This document provides guidelines for contributing to the project.
 
 ## 🌟 How to Contribute
 
 ### Reporting Bugs
 
-1. Check if the bug has already been reported in [Issues](https://github.com/yourusername/BQ2PG/issues)
+1. Check if the bug has already been reported in [Issues](https://github.com/yourusername/BlueQuery/issues)
 2. If not, create a new issue with:
    - Clear title and description
    - Steps to reproduce
@@ -16,7 +16,7 @@ Thank you for your interest in contributing to BQ2PG! This document provides gui
 
 ### Suggesting Features
 
-1. Check [Discussions](https://github.com/yourusername/BQ2PG/discussions) for similar ideas
+1. Check [Discussions](https://github.com/yourusername/BlueQuery/discussions) for similar ideas
 2. Create a new discussion with:
    - Clear use case
    - Proposed solution
@@ -26,8 +26,8 @@ Thank you for your interest in contributing to BQ2PG! This document provides gui
 
 1. **Fork the repository**
    ```bash
-   git clone https://github.com/yourusername/BQ2PG.git
-   cd BQ2PG
+   git clone https://github.com/yourusername/BlueQuery.git
+   cd BlueQuery
    ```
 
 2. **Create a feature branch**
@@ -77,8 +77,8 @@ Thank you for your interest in contributing to BQ2PG! This document provides gui
 
 ```bash
 # Clone your fork
-git clone https://github.com/YOUR_USERNAME/BQ2PG.git
-cd BQ2PG
+git clone https://github.com/YOUR_USERNAME/BlueQuery.git
+cd BlueQuery
 
 # Create virtual environment
 python -m venv venv

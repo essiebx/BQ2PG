@@ -6,7 +6,7 @@ Data transformation pipeline with quality validation and resilience.
 import pandas as pd
 from typing import Callable, List, Dict, Any
 
-from .config import config
+from .app_config import config
 from .utils import timer
 from .resilience import RetryPolicy, CircuitBreaker, DeadLetterQueue
 from .monitoring import StructuredLogger, get_metrics_collector, get_tracer

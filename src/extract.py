@@ -6,7 +6,7 @@ BigQuery data extraction for patents with resilience and monitoring.
 import pandas as pd
 from google.cloud import bigquery
 
-from .config import config
+from .app_config import config
 from .utils import logger, timer
 from .resilience import RetryPolicy, CircuitBreaker, DeadLetterQueue
 from .monitoring import StructuredLogger, get_metrics_collector, get_tracer
